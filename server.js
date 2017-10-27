@@ -1,8 +1,10 @@
 const app = require('express')();
 const API = require('json-api');
 const mongoose = require('mongoose');
+require('dotenv').config();
+
 const APIError = API.types.Error;
-mongoose.connect('mongodb://localhost/truck-api');
+mongoose.connect(process.env.DB_URL);
 
 const models = {
   User: require('./models/user').model,
@@ -21,7 +23,8 @@ const registryTemplates = {
 };
 
 const adapter = new API.dbAdapters.Mongoose(models);
-const registry = new API.ResourceTypeRegistry(registryTemplates, {dbAdapter: adapter});
+const registry = new API.ResourceTypeRegistry(registryTemplates,
+  {dbAdapter: adapter});
 
 const docs = new API.controllers.Documentation(registry, {name: 'Truck API'});
 const controller = new API.controllers.API(registry);
@@ -55,15 +58,16 @@ app.get('/api', front.docsRequest.bind(front));
 app.route(`/api/:type(${db.join('|')})`).get(apiReqHandler).post(apiReqHandler)
   .patch(apiReqHandler);
 
-app.route(`/api/:type(${db.join('|')})/:id`).get(apiReqHandler).patch(apiReqHandler)
+app.route(`/api/:type(${db.join('|')})/:id`).get(apiReqHandler)
+  .patch(apiReqHandler)
   .delete(apiReqHandler);
 
 app.route(`/api/:type(${db.join('|')})/:id/relationships/:relationship`)
   .get(apiReqHandler).post(apiReqHandler).patch(apiReqHandler)
   .delete(apiReqHandler);
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   front.sendError(new APIError(404, undefined, 'Not Found'), req, res);
 });
 
-app.listen(3000);
+app.listen(process.env.PORT);
